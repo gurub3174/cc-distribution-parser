@@ -1,0 +1,57 @@
+name: Drift Weekly
+
+# Cron-driven correction-rate snapshot (architecture.md §15.5 ritual).
+# Writes a markdown file to drift-reports/ that is committed back to the repo
+# so silent ritual decay is visible in `git status` (Critic C4 mitigation).
+
+on:
+  schedule:
+    # Mondays 08:00 UTC. cron uses UTC — adjust if firm timezone differs.
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+    # Allow manual trigger for testing.
+
+jobs:
+  drift-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      - name: Sync deps
+        run: uv sync --extra dev
+
+      - name: Run drift snapshot
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+        run: |
+          # Snapshot script is implemented in Sprint 6 (drift-reports/runner.py).
+          # Stub for now — workflow is wired so the trigger doesn't decay before code lands.
+          mkdir -p drift-reports
+          echo "# Drift Report — $(date -u +%Y-%m-%d)" > "drift-reports/weekly-$(date -u +%Y-%m-%d).md"
+          echo "_Stub — drift snapshot script lands in Sprint 6._" >> "drift-reports/weekly-$(date -u +%Y-%m-%d).md"
+
+      - name: Commit drift report
+        # NOTE: requires `main` branch protection to allow github-actions[bot] pushes.
+        # If branch protection enforces required reviews or signed commits, switch to
+        # peter-evans/create-pull-request or document the exemption in overrides.md.
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add drift-reports/
+          git diff --staged --quiet || git commit -m "chore(drift): weekly snapshot $(date -u +%Y-%m-%d)"
+          git push

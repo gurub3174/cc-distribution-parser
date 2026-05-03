@@ -1,0 +1,59 @@
+# .claude infrastructure — hybrid pattern (2026-05-03).
+# .claude/rules/ SHIPS (project-specific rules — Snowflake DDL policy, LangGraph swap playbook, etc.).
+# Other .claude/ subfolders are ignored — central inheritance from ~/.claude/ai-build-team/ handles them.
+
+.claude/agents/
+.claude/skills/
+.claude/commands/
+.claude/hooks/
+
+# Always ignored (machine-specific or sensitive)
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Standard Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Secrets — never commit
+.env
+.env.*
+# Re-include the template
+!.env.example
+.credentials.json
+*.key
+*.pem
+secrets/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Project-local scratch / data
+data/
+scratch/
+*.pdf
+*.docx
+
+# Project-local wiki runtime (drift reports + raw research notes are runtime state)
+wiki/raw/
+drift-reports/

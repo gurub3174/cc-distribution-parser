@@ -1,0 +1,41 @@
+name: Golden Eval
+
+# Required check on PRs touching prompts / schemas / models / LLM client
+# (Acceptance Criterion 8 in spec/scope.md).
+
+on:
+  pull_request:
+    paths:
+      - "src/cc_distribution_parser/prompts/**"
+      - "src/cc_distribution_parser/schemas/**"
+      - "src/cc_distribution_parser/services/llm_client.py"
+      - "src/cc_distribution_parser/services/extract.py"
+      - "config/models.yaml"               # forward-stub; created in Sprint 6
+      - "tests/eval/**"
+      - "data/golden_eval/**"
+      - "pyproject.toml"                   # dep bumps on instructor/langgraph/boto3 should re-run eval
+
+jobs:
+  golden-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      - name: Sync deps (incl. eval extras)
+        run: uv sync --extra dev --extra eval
+
+      - name: Run golden eval (recorded fixtures by default; live mode opt-in)
+        env:
+          EVAL_LIVE: "0"
+        run: uv run pytest -m eval --tb=short
+
+      # Phase 1.5: enforce regression gate (>5pt → >2pt) by parsing pytest output
+      # against last-known-good metrics. Stub for now — gate is enforced by the
+      # eval harness itself once implemented in Sprint 6.
