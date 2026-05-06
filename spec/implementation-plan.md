@@ -9,6 +9,7 @@ companion: design-spec.md
 amendments:
   - 2026-04-28 (v1.1) — Snowflake + canon Phase 1.5 + Phoenix MVP + ops adds
   - 2026-05-03 (v1.1.1) — repo structure: `app/` → `src/cc_distribution_parser/`; `claude/` → `.claude/` (hidden); rules pattern → hybrid (central inheritance + project-specific .claude/rules/ + overrides.md). See `overrides.md` "Context — hybrid rules pattern" for rationale.
+  - 2026-05-04 (v1.1.2) — Sprint 1 expands to write `documents` registry rows at FastAPI ingress and emit `parsed_doc_chunks` (text + hierarchy + char-offsets) at parse time. Migrations `002`–`005` apply alongside `001_initial.sql`. See `architecture.md` Appendix E for the v1.1.5 spec deltas this implements. Sprint 1 budget +1 day; total MVP timeline still ~5 weeks full-time.
 ---
 
 # Implementation Plan — Capital Call & Distribution Parser (Phase 1, ~5 weeks solo)
@@ -197,30 +198,40 @@ pip-audit = "^2.7"
 
 **Sprint 0 exit criteria:** all check-marked items above complete + tasks 10-11 unblocked when Snowflake creds available.
 
-## Sprint 1 — Ingestion + Parse + Storage + Observability (5-7 days)
+## Sprint 1 — Ingestion + Parse + Storage + Observability (5-7 days, +1 day for v1.1.2)
+
+> **v1.1.2 (2026-05-04):** Sprint 1 expands by ~1 day to (a) write `documents` registry rows at FastAPI ingress; (b) emit `parsed_doc_chunks` (text + hierarchy + char-offsets) at parse time. Embeddings + `doc_summary_context` populate Sprint 3 when Bedrock Titan v2 lands. Migrations `002`–`005` apply alongside `001_initial.sql`. See `architecture.md` Appendix E.
 
 **Deliverables:**
 - [ ] FastAPI ingress endpoint accepts PDF + DOCX uploads; stores blob to S3 + `jobs` row in SQLite ops state
+- [ ] **`documents` registry row written at ingress** (v1.1.2) — file SHA256 hash for dedup, `original_s3_uri`, `mime_type`, `byte_size`, `status='ingested'`, `user_id`. Dedup query: if `file_hash` already exists for this `user_id`, return the existing `doc_id` instead of re-uploading.
 - [ ] `ParserProtocol` interface defined
 - [ ] `DoclingParser` implemented; emits `ParsedDoc` (parser_version included)
 - [ ] Parse-only worker processes queue; 5 test docs parse successfully
-- [ ] Snowflake schema applied (all MVP tables) with first-class versioning columns on `extractions`: `model_id`, `prompt_hash`, `prompt_version`, `parser_version`, `schema_version`
+- [ ] **`documents` row updated at parse completion** (v1.1.2) — `docling_json_s3_uri`, `parser_version`, `parser_metadata_json` ({page_count, language, contains_tables, contains_images, ocr_used, parse_duration_ms}), `status='parsed'`. Failed parses set `status='failed_parse'`.
+- [ ] **`parsed_doc_chunks` populated at parse** (v1.1.2) — one row per Docling leaf element with `read_order`, `parent_chunk_id`, `hierarchy_level`, `char_offset_start/end`, `page`, `bbox`, `layout_role`, `text`. `embedding`, `doc_summary_context`, `embedding_input_hash` left NULL — backfilled Sprint 3.
+- [ ] Snowflake schema applied — `001_initial.sql` plus v1.1.2 migrations `002_add_documents_registry.sql`, `003_alter_extractions_add_temperature_and_quality.sql`, `004_alter_corrections_add_status.sql`, `005_alter_chunks_add_hierarchy.sql`. First-class versioning columns on `extractions`: `model_id`, `prompt_hash`, `prompt_version`, `parser_version`, `schema_version`, `temperature` (v1.1.2).
 - [ ] **structlog bound-context contract** — `doc_id` + `pipeline_run_id` bound at ingress, inherited by every downstream stage; required fields enforced via custom processor
-- [ ] **Phoenix sidecar wired** — OTel spans emitted from `parse` stage; visible in Phoenix UI at `localhost:6006`; spans carry full versioning fields (model_id, prompt_version, prompt_hash, parser_version, schema_version)
+- [ ] **Phoenix sidecar wired** — OTel spans emitted from `parse` stage; visible in Phoenix UI at `localhost:6006`; spans carry full versioning fields (model_id, prompt_version, prompt_hash, parser_version, schema_version, temperature)
 - [ ] Per-doc cost attribution scaffolded (zero for parse stage; ready for LLM calls in Sprint 2)
 
 **Tasks:**
-1. `app/schemas/parsed_doc.py` — `ParsedDoc` Pydantic model (includes `parser_version`)
-2. `app/parsing/base.py` — `ParserProtocol`
-3. `app/parsing/docling_parser.py` — wrap docling + spacy-layout; sets `parser_version` from docling version + own wrapper version
-4. `app/main.py` — FastAPI app with `/upload` endpoint
-5. `app/db/snowflake_models.py` — schema declarations for all MVP tables (with versioning columns)
-6. `app/db/sqlite_models.py` — ops-state schema for langgraph + hitl locks
-7. `app/services/parse.py` — service function wrapping the parser
-8. S3 wiring (local: MinIO in docker-compose; prod: real S3)
-9. **`app/observability/logging.py`** — structlog config with bound-context processors; required-fields validator; JSON output to stdout
-10. **`app/observability/tracing.py`** — OTel SDK config; OTLP exporter pointing to Phoenix sidecar; helper to attach versioning fields to every span
-11. End-to-end test: upload → parse → SQLite job row + Snowflake `extractions` placeholder row + Phoenix trace visible
+1. `src/cc_distribution_parser/schemas/parsed_doc.py` — `ParsedDoc` Pydantic model (includes `parser_version`)
+2. `src/cc_distribution_parser/schemas/document.py` (v1.1.2) — `DocumentRegistryRow` Pydantic model matching the `documents` table
+3. `src/cc_distribution_parser/schemas/chunk.py` (v1.1.2) — `ChunkRow` Pydantic model matching `parsed_doc_chunks`; helpers for walking Docling output → hierarchy
+4. `src/cc_distribution_parser/schemas/provenance.py` (v1.1.2) — `FieldProvenance` + `ExtractionProvenance` Pydantic models per `architecture.md` §7.6
+5. `src/cc_distribution_parser/parsing/base.py` — `ParserProtocol`
+6. `src/cc_distribution_parser/parsing/docling_parser.py` — wrap docling + spacy-layout; sets `parser_version`; emits `(ParsedDoc, list[ChunkRow], parser_metadata)`
+7. `src/cc_distribution_parser/main.py` — FastAPI `/upload` endpoint with file-hash dedup against `documents`
+8. `src/cc_distribution_parser/db/snowflake_models.py` — declarations for ALL tables incl. `documents` (v1.1.2)
+9. `src/cc_distribution_parser/db/sqlite_models.py` — ops-state schema for langgraph + hitl locks
+10. `src/cc_distribution_parser/services/parse.py` — service function: parse → write docling JSON to S3 → update `documents` row → bulk-insert `parsed_doc_chunks` rows
+11. `src/cc_distribution_parser/services/ingest.py` (v1.1.2) — file-hash compute + dedup + S3 write + `documents` row insert
+12. S3 wiring (local: MinIO in docker-compose; prod: real S3); two prefixes: `raw/{user_id}/{doc_id}.{ext}` and `parsed/{user_id}/{doc_id}.json`
+13. **`src/cc_distribution_parser/observability/logging.py`** — structlog config with bound-context processors; required-fields validator; JSON output to stdout
+14. **`src/cc_distribution_parser/observability/tracing.py`** — OTel SDK config; OTLP exporter pointing to Phoenix sidecar; helper to attach versioning fields to every span
+15. End-to-end test: upload → `documents` row + S3 blob → parse → docling JSON to S3 + `documents` updated + `parsed_doc_chunks` rows inserted + Phoenix trace visible
+16. Dedup test: upload same file twice → second upload returns first `doc_id` (no duplicate `documents` row)
 
 ## Sprint 2 — Classification + Extraction (Monolithic) + LLM Client + Retry/DLQ (5-7 days)
 

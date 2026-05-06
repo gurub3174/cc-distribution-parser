@@ -5,8 +5,8 @@ description = "Extracts capital-call and distribution notices into validated str
 requires-python = ">=3.11,<3.13"   # Phoenix/LangGraph/Instructor wheel coverage on 3.13+ unverified
 dependencies = [
     # Web + schema
-    "fastapi>=0.115,<0.116",
-    "uvicorn[standard]>=0.30,<0.31",
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.30,<1",
     "pydantic>=2.8,<3",
     "python-multipart>=0.0.9,<0.1",     # FastAPI file uploads
     "jinja2>=3.1,<4",                   # HITL UI templates
@@ -25,22 +25,25 @@ dependencies = [
     # Document parsing
     "docling~=2.0",
     "spacy>=3.7,<4",
-    "spacy-layout~=0.2",
+    "spacy-layout~=0.0.12",
 
     # LLM stack — pinned tight per spec/critical-review.md W6 (R10)
     "instructor>=1.4,<2",
     "tenacity>=9.0,<10",
 
-    # Orchestration — pinned ~0.2.x per spec/critical-review.md W3 (R4) and .claude/rules/framework-swap.md
-    "langgraph~=0.2.0",
-    "langgraph-checkpoint-sqlite~=0.1",
+    # Orchestration — minor-compatible pins per .claude/rules/framework-swap.md
+    # Sprint 0 note: langgraph 0.2.x was never published on PyPI; first public release was 1.x.
+    # langgraph-checkpoint-sqlite 0.x similarly never published; first release was 1.x (now 3.x).
+    # No LangGraph code existed when pins were updated, so migration cost = zero.
+    "langgraph~=1.1",
+    "langgraph-checkpoint-sqlite~=3.0",
 
     # Observability — Phoenix sidecar promoted to MVP Sprint 1 per v1.1 lock
     "structlog>=24.1,<25",
     "opentelemetry-api>=1.26,<2",
     "opentelemetry-sdk>=1.26,<2",
     "opentelemetry-exporter-otlp>=1.26,<2",
-    "arize-phoenix>=5.0,<6",
+    "arize-phoenix>=15.0,<16",
 
     # Config + secrets
     "pydantic-settings>=2.4,<3",
@@ -59,7 +62,7 @@ dev = [
     "moto[s3]>=5.0,<6",                 # local S3 emulation in unit tests
 ]
 eval = [
-    "deepeval>=1.4,<2",
+    "deepeval>=3.0,<4",
 ]
 
 [build-system]

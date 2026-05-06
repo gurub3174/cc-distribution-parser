@@ -1,15 +1,9 @@
-# .claude infrastructure — hybrid pattern (2026-05-03).
-# .claude/rules/ SHIPS (project-specific rules — Snowflake DDL policy, LangGraph swap playbook, etc.).
-# Other .claude/ subfolders are ignored — central inheritance from ~/.claude/ai-build-team/ handles them.
-
-.claude/agents/
-.claude/skills/
-.claude/commands/
-.claude/hooks/
-
-# Always ignored (machine-specific or sensitive)
-.claude/settings.local.json
+# Claude Code tooling — exclude entirely from public repo
+.claude/
+CLAUDE.md
 CLAUDE.local.md
+mcp.json
+overrides.md
 
 # Standard Python
 __pycache__/

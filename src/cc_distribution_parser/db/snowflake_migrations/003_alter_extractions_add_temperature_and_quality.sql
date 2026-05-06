@@ -1,0 +1,51 @@
+-- Migration: 003_alter_extractions_add_temperature_and_quality
+-- Author:    gurub3174
+-- Date:      2026-05-04
+-- Reason:    v1.1.5 amendment — extend extractions with two additive columns:
+--
+--            (a) temperature FLOAT — per-LLM-call sampling temperature elevated
+--                to a first-class queryable column (architecture.md §6.2 v1.1.5).
+--                Pairs with model_id/prompt_hash for regression analysis: same
+--                prompt + same model + different temperature must be visible in
+--                SQL, not buried in provenance_json.
+--
+--            (b) extraction_quality_json VARIANT — reserved-shape column for the
+--                Phase 1.5 soft-signal calibration study (architecture.md §7
+--                v1.1.5; .claude/rules/threshold-unlock.md). Phase 1 stays at
+--                100% HITL (auto_approve_threshold = 0.0) so this column is
+--                NULL on every Phase 1 row; reserving the shape now avoids a
+--                more expensive Snowflake migration + backfill once calibration
+--                unlocks per-field scoring.
+--
+--                Target shape (documented for the implementer; enforced
+--                at the Pydantic layer):
+--                { "<field_name>": {
+--                      "tri_state": "validated" | "absent" | "failed",
+--                      "soft_signals": {              -- populated Phase 1.5+
+--                          "semantic_entropy": float | null,
+--                          "self_consistency_n3": float | null,
+--                          "schema_confidence": float | null,
+--                          "reconciliation_score": float | null
+--                      },
+--                      "score": float | null,         -- ensemble; populated Phase 1.5+
+--                      "calibrated_at_threshold": float | null
+--                  }, ... }
+--
+-- Reverts:   none
+-- Costs:     N/A (additive; both columns nullable)
+-- Reviewed:  pending Code Reviewer pass-1 + pass-3
+
+-- ============================================================================
+-- UP
+-- ============================================================================
+
+ALTER TABLE extractions ADD COLUMN IF NOT EXISTS temperature             FLOAT;
+ALTER TABLE extractions ADD COLUMN IF NOT EXISTS extraction_quality_json VARIANT;
+
+-- ============================================================================
+-- DOWN
+-- ============================================================================
+-- Gated by .claude/rules/snowflake-migrations.md rule 7.
+--
+-- ALTER TABLE extractions DROP COLUMN IF EXISTS extraction_quality_json;
+-- ALTER TABLE extractions DROP COLUMN IF EXISTS temperature;

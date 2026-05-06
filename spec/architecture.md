@@ -1,9 +1,13 @@
 ---
 project: cc-distribution-parser
 type: design-spec
-version: 1.1
+version: 1.1.5
 created: 2026-04-28
+updated: 2026-05-04
 status: shareable
+amendments:
+  - 2026-04-28 (v1.1) — Snowflake + canon Phase 1.5 + Phoenix MVP + ops adds
+  - 2026-05-04 (v1.1.5) — documents registry table; parsed_doc_chunks populated from MVP with hierarchy/char-offsets/summary-context; +temperature & +extraction_quality_json on extractions; +status on corrections; structured FieldProvenance shape inside extractions.provenance_json; reflexion bullet bridging Phase 1.5 → Phase 3
 supersedes-on:
   - architecture.md (Snowflake storage; canonicalization timing; multi-tenancy posture; Phoenix in MVP)
   - product-spec.md (storage layer; multi-tenancy framing)
@@ -236,23 +240,50 @@ This is a v1.1 decision. The 2026-04-21 architecture specified one Postgres + pg
 
 ### 5.2 Schema (Snowflake)
 
+> **v1.1.5 changes (2026-05-04):** Added `documents` registry table (file-hash dedup, S3 blob pointers, parser-metadata snapshot). Added `temperature` + `extraction_quality_json` columns to `extractions` (latter is reserved-shape — populated Phase 1.5+ when calibration unlocks per-field scoring). Added `status` to `corrections`. Promoted `parsed_doc_chunks` from "Phase 2 scaffold" to "populated from MVP" with hierarchy + char-offset + doc-summary-context columns; chunks now serve both Phase 2 RAG retrieval AND MVP field-level provenance markers. See migrations `002`–`005` in `db/snowflake_migrations/`.
+
 ```
+documents                        (v1.1.5 — doc-level registry; one row per
+  id,                              ingested file, written at FastAPI ingress)
+  file_hash,                     -- SHA256 of original bytes (dedup)
+  original_filename,
+  gp_source,                     -- nullable; GP name when known
+  mime_type, byte_size,
+  original_s3_uri,               -- s3://bucket/raw/{user_id}/{doc_id}.{ext}
+  docling_json_s3_uri,           -- s3://bucket/parsed/...; null until parsed
+  parser_version,                -- doc-level parse provenance
+  parser_metadata_json,          -- {page_count, language, contains_tables,
+                                 --  contains_images, ocr_used, parse_duration_ms}
+  status,                        -- 'ingested' | 'parsed' | 'failed_parse'
+  ingested_at, ingested_by,
+  user_id
+
 extractions                      (final per-doc extraction)
-  id, doc_id, class,
+  id, doc_id, class,             -- doc_id → documents.id (informational FK)
   payload_variant,               -- 'capital_call' | 'distribution'
   payload_json,                  -- CapitalCallV1 | DistributionV1
   model_id,                      -- first-class column (§6.2)
   prompt_hash,                   -- SHA256, first-class (§6.2)
   prompt_version,                -- label, first-class (§6.2)
+  temperature,                   -- v1.1.5 — per-call sampling temperature, first-class
   parser_version,                -- first-class (§6.2)
   schema_version,                -- first-class (§6.2)
-  provenance_json,               -- few_shot_ids, signals, tokens, cost_usd
+  provenance_json,               -- few_shot_ids, field_provenance (§7.6),
+                                 --   signals, tokens, cost_usd
+  extraction_quality_json,       -- v1.1.5 reserved shape (§7); NULL on Phase 1
+                                 --   rows (100% HITL); populated Phase 1.5+ when
+                                 --   calibration study lands per-field scoring.
+                                 --   Shape: {field: {tri_state, soft_signals,
+                                 --   score, calibrated_at_threshold}}
   committed_by, committed_at,
   superseded_by                  -- WORM via insert + pointer
 
 corrections                      (HITL correction log, append-only)
   id, extraction_id, field, old_value, new_value,
-  reason_code, user_id, ts
+  reason_code, user_id, ts,
+  status                         -- v1.1.5 — 'open' | 'applied' | 'rejected'
+                                 --   | 'superseded'. Filter to 'applied' before
+                                 --   feeding the calibration study.
 
 few_shot_exemplars_silver        (HITL-approved → next call's few-shots)
   id, extraction_id, class,
@@ -261,9 +292,22 @@ few_shot_exemplars_silver        (HITL-approved → next call's few-shots)
   synopsis_200tok,
   approved_at
 
-parsed_doc_chunks                (RAG infra for Phase 2)
-  id, doc_id, page, layout_role,
-  text, bbox, embedding VECTOR(1024)
+parsed_doc_chunks                (v1.1.5 — populated from MVP onward; serves
+  id, doc_id,                      Phase 2 RAG retrieval AND field-level
+  page, layout_role,               provenance markers from §7.6)
+  text, bbox,
+  read_order,                    -- v1.1.5 — sequential order within doc
+  parent_chunk_id,               -- v1.1.5 — ancestor chunk; nullable
+  hierarchy_level,               -- v1.1.5 — 0=root, 1=section, 2=subsection,
+                                 --   3=paragraph/table/leaf
+  char_offset_start,             -- v1.1.5 — load-bearing for FieldProvenance (§7.6)
+  char_offset_end,
+  doc_summary_context,           -- v1.1.5 — doc-level summary prepended before
+                                 --   embed (RAPTOR / contextual-retrieval pattern);
+                                 --   populated when embedding is computed (Sprint 3)
+  embedding_input_hash,          -- v1.1.5 — SHA256 of (summary || text);
+                                 --   reproducibility check for re-embedding
+  embedding VECTOR(1024)         -- populated Sprint 3 (Bedrock Titan v2 lands)
 
 eval_runs                        (golden-set replay history)
   id, run_at, commit_sha, prompt_hash,
@@ -391,7 +435,34 @@ Project rule at `claude/rules/prompt-injection.md`. Defense-in-depth aligns with
 
 ### 7.6 No-fabrication rule + provenance
 
-Every extracted value must trace to a document chunk. Project rule at `claude/rules/no-fabrication.md`. Per-span OTel attributes capture which chunk produced which value; per-extraction `provenance_json` stores model + prompt version + prompt hash + few-shot IDs.
+Every extracted value must trace to a document chunk. Project rule at `claude/rules/no-fabrication.md`. Per-span OTel attributes capture which chunk produced which value; per-extraction `provenance_json` stores model + prompt version + prompt hash + few-shot IDs + **structured field-level location markers** (v1.1.5).
+
+**FieldProvenance shape (v1.1.5 — enforced at the Pydantic layer, stored inside `extractions.provenance_json.field_provenance`):**
+
+```python
+# src/cc_distribution_parser/schemas/provenance.py
+class FieldProvenance(BaseModel):
+    page: int                                      # 1-indexed page number
+    bbox: tuple[float, float, float, float]        # (x0, y0, x1, y1) in PDF coordinates
+    char_offset_start: int                         # absolute char position in doc text
+    char_offset_end: int                           # absolute char position in doc text
+    chunk_id: UUID                                 # FK → parsed_doc_chunks.id
+
+class ExtractionProvenance(BaseModel):
+    few_shot_ids: list[UUID]
+    field_provenance: dict[str, FieldProvenance]   # {field_name: location} — one entry per
+                                                   # extracted field that the LLM grounded
+                                                   # in source. Absent fields have no entry.
+    input_tokens: int
+    output_tokens: int
+    cached_tokens: int
+    cost_usd: Decimal
+    signals: dict[str, Any]                        # tri-state today; soft signals Phase 1.5+
+```
+
+The four fields per FieldProvenance map directly to columns on `parsed_doc_chunks` (v1.1.5: `read_order`, `parent_chunk_id`, `hierarchy_level`, `char_offset_start`, `char_offset_end`, `bbox`). Joining by `chunk_id` lets the HITL UI render "value X came from page 3, table 2, bytes 1024–1052" without storing a duplicate text snippet on the extraction row.
+
+Why structured rather than free-form JSON: free-form `provenance_json` makes "show me all extractions where the GP-name source was a footer chunk" impossible to query. Structured `field_provenance.{field}.chunk_id` joins to `parsed_doc_chunks.layout_role` directly. Snowflake stores it inside the same VARIANT column — no schema migration penalty for adopting the structure later.
 
 ### 7.7 Change-management rituals (mechanically enforced)
 
@@ -441,6 +512,7 @@ Each item is gated on either calendar deadline or empirical evidence from MVP pr
 - **Soft-signal ensemble live.** Semantic entropy + self-consistency added to the gate per the calibration weights from Phase 1.5.
 - **Hybrid retrieval.** BM25 over exact-match terms (fund names, GP names, ISO currency codes) combined with the existing dense-embedding retrieval via reciprocal-rank fusion.
 - **Document-chunk RAG activation.** The `parsed_doc_chunks` embeddings stored from MVP onward become a retrieval target. Weak-field extractions trigger a secondary call that retrieves top-k chunks for that field by embedding similarity + layout-role filter.
+- **Reflexion / self-critique loops** (new in v1.1.5). Bridges Phase 1.5 decomposition and Phase 3 distillation: feed accumulated HITL correction pairs back as adversarial critique prompts — extractor proposes → critique pass scores against the corrections corpus → extractor revises. Cheaper than fine-tuning, harder than monolithic prompting; when reflexion plateaus, distillation pays off.
 - **Experiment A/B infrastructure** (new in v1.1) — distinct from one-off A/B experiments already planned. The ability to split live traffic between two prompts or two models, log a `treatment_label` column on `extractions`, and compare outcomes via SQL. Unlocks continuous extractor improvement: every prompt iteration becomes a measurable experiment, not a manual spot-check.
 
 ### 8.4 Phase 3 — Distilled extractors + fine-tune option (quarters)
@@ -559,3 +631,17 @@ Raw research notes: `wiki/raw/2026-04-21-market-scout-cc-distribution-parser.md`
 | Experiment A/B infra | Implicit (one-off A/Bs only) | Phase 2 line item (§8.3) | 2026-04-28 |
 
 Net effect on MVP: +0.5 day Sprint 1 (Phoenix + versioning columns), +0.5 day Sprint 2 (retry + DLQ), −2 days Sprint 3 (canon deferred). Total MVP timeline holds at ~5 weeks full-time.
+
+### Appendix E — v1.1.5 changes from v1.1 (2026-05-04)
+
+| Item | v1.1 (2026-04-28) | v1.1.5 (this update) | Migration |
+|---|---|---|---|
+| Document registry | Implicit (`extractions.doc_id` referenced "a ParsedDoc UUID" with no documents table) | First-class `documents` table with file-hash dedup, S3 blob pointers, parser-metadata snapshot | `002_add_documents_registry.sql` |
+| `parsed_doc_chunks` population | Scaffolded for Phase 2 RAG retrieval (empty in MVP) | Populated from MVP onward (text + hierarchy + char-offsets in Sprint 1; embeddings + summary-context backfilled Sprint 3) | `005_alter_chunks_add_hierarchy.sql` |
+| Field-level provenance | `provenance_json` free-form VARIANT; informally captured | Structured `FieldProvenance` Pydantic shape stored inside `provenance_json.field_provenance` (§7.6); chunk_id joins to `parsed_doc_chunks` | (no migration — Pydantic shape only) |
+| LLM call temperature | Inside `provenance_json` | First-class `extractions.temperature` column | `003_alter_extractions_add_temperature_and_quality.sql` |
+| Per-field quality score | Tri-state at gate; no persisted column | Reserved `extractions.extraction_quality_json` VARIANT; populated Phase 1.5+ when calibration unlocks scoring; NULL on Phase 1 rows (100% HITL) | `003_alter_extractions_add_temperature_and_quality.sql` |
+| Correction lifecycle | Inferred from joins on `extractions.superseded_by` | First-class `corrections.status` (`open`/`applied`/`rejected`/`superseded`); calibration filters to `applied` | `004_alter_corrections_add_status.sql` |
+| Reflexion phase | Not in any phase | Phase 2 bullet (§8.3) — bridges decomposition (Phase 1.5) and distillation (Phase 3) | (no migration) |
+
+Net effect on MVP: +1 day Sprint 1 (documents table writes at ingress + chunk emission at parse). No timeline impact on Sprints 2–6. Phase 1.5 calibration study unlocks `extraction_quality_json` population.
