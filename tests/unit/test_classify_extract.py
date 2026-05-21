@@ -80,5 +80,3 @@ def test_extract_distro_persists_payload_and_schema_version():
     out = extract_service.run_distro(state, model_id=SONNET, instructor_send=stub_send)
     assert out["schema_version"] == "distribution@1.0.0"
     assert out["extraction_payload"]["distribution_type"] == "income"
-
-
