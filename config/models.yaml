@@ -1,0 +1,33 @@
+# LLM model selection — pinned exact IDs per .claude/rules/structured-output-fallback.md rule 1.
+#
+# Inference profile IDs (`us.anthropic.*`) are required for cross-region routing
+# in Bedrock Converse; raw model IDs (e.g. `anthropic.claude-haiku-4-5-...`)
+# fail with InvalidRequestException for non-on-demand routes.
+
+models:
+  classifier:
+    id: us.anthropic.claude-haiku-4-5-20251001-v1:0
+    temperature: 0.0
+  extractor_cc:
+    id: us.anthropic.claude-sonnet-4-6-20250929-v1:0
+    temperature: 0.0
+  extractor_distro:
+    id: us.anthropic.claude-sonnet-4-6-20250929-v1:0
+    temperature: 0.0
+  reclassifier:
+    # Escalation per Critic W4 — same family, used on reconciliation failure.
+    id: us.anthropic.claude-sonnet-4-6-20250929-v1:0
+    temperature: 0.0
+  embedding:
+    id: amazon.titan-embed-text-v2:0
+    dimensions: 1024
+
+# ============================================================================
+# auto_approve_threshold: LOCKED at 0.0 (100% HITL) per Acceptance Criterion 7.
+#
+# DO NOT CHANGE THIS VALUE WITHOUT THE CALIBRATION-STUDY UNLOCK PROCEDURE
+# in .claude/rules/threshold-unlock.md. The threshold-lock-check CI workflow
+# fails if this value changes without a matching change-log entry in that
+# rule file.
+# ============================================================================
+auto_approve_threshold: 0.0
