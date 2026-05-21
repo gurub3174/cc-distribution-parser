@@ -13,6 +13,7 @@ Bootstrap SQLite ops state. Holds two tables:
 - hitl_queue_locks: advisory locks on in-flight HITL reviews. Prevents two
   reviewers grabbing the same item.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -45,9 +46,7 @@ def upgrade() -> None:
     # LangGraph's SqliteSaver auto-creates its own schema on first use; this marker only
     # ensures a fresh deploy has the database file present before LangGraph touches it.
     op.execute(
-        "CREATE TABLE IF NOT EXISTS _langgraph_bootstrap_marker ("
-        "id INTEGER PRIMARY KEY, note TEXT"
-        ")"
+        "CREATE TABLE IF NOT EXISTS _langgraph_bootstrap_marker (id INTEGER PRIMARY KEY, note TEXT)"
     )
 
 

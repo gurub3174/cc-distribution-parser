@@ -3,6 +3,7 @@
 Reads SQLITE_OPS_PATH from env (set by docker-compose / production deploy);
 falls back to alembic.ini sqlalchemy.url for local CLI use.
 """
+
 from __future__ import annotations
 
 import os

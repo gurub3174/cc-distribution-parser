@@ -98,3 +98,7 @@ typeCheckingMode = "standard"
 pythonVersion = "3.11"
 include = ["src", "tests"]
 exclude = ["**/__pycache__", "**/.venv", "build", "dist"]
+# DocState is intentionally total=False — each pipeline stage sets only the
+# keys it produces. KeyError at runtime is an expected failure mode (stage
+# misordering), not a static-analyzable bug.
+reportTypedDictNotRequiredAccess = false
