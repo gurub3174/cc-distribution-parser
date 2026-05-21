@@ -1,0 +1,46 @@
+name: threshold-lock-check
+
+# Closes the enforcement gap from build-lead lesson 2026-05-03:
+# "A rule that names itself a forcing function MUST ship with the forcing function."
+#
+# Fires when config/models.yaml changes. Reads the auto_approve_threshold
+# from the YAML and compares it to the last change-log row in
+# .claude/rules/threshold-unlock.md. If the YAML value diverges and the
+# change-log wasn't updated, the workflow fails — preventing a silent
+# threshold raise.
+
+on:
+  pull_request:
+    paths:
+      - "config/models.yaml"
+      - ".claude/rules/threshold-unlock.md"
+  push:
+    branches: [main]
+    paths:
+      - "config/models.yaml"
+      - ".claude/rules/threshold-unlock.md"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compare YAML threshold against rule change-log
+        shell: bash
+        run: |
+          set -euo pipefail
+          yaml_value=$(grep -E '^auto_approve_threshold:' config/models.yaml \
+            | awk '{print $2}')
+          logged_value=$(grep -E '^\| [0-9]{4}-[0-9]{2}-[0-9]{2} \|' \
+            .claude/rules/threshold-unlock.md \
+            | tail -1 | awk -F'|' '{gsub(/ /,"",$3); print $3}')
+          echo "YAML auto_approve_threshold = $yaml_value"
+          echo "Rule change-log last value = $logged_value"
+          if [ "$yaml_value" != "$logged_value" ]; then
+            echo "::error::auto_approve_threshold drifted from rule change-log."
+            echo "::error::Update .claude/rules/threshold-unlock.md change-log table"
+            echo "::error::with the new value + approver + calibration-study reference."
+            exit 1
+          fi
