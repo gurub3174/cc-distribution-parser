@@ -43,10 +43,20 @@ secrets/
 Thumbs.db
 
 # Project-local scratch / data
-data/
+data/*
 scratch/
 *.pdf
 *.docx
+# Re-include the golden-eval corpus (PDFs + JSON ground truth) so CI eval is reproducible.
+# Must un-ignore the directory FIRST, then the files, then re-override *.pdf for this scope.
+!data/golden_eval/
+!data/golden_eval/*.pdf
+!data/golden_eval/*.json
+!data/golden_eval/*.txt
+
+# Local SQLite ops state — never commit
+.ccdp-ops.sqlite
+*.ccdp-ops.sqlite
 
 # Project-local wiki runtime (drift reports + raw research notes are runtime state)
 wiki/raw/

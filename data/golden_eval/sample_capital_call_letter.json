@@ -1,0 +1,20 @@
+{
+  "template_id": "free-form-cc-template",
+  "doc_class": "other_or_reject",
+  "_notes": [
+    "This is a TEMPLATE/SAMPLE letter — placeholders ABC LLC / ABC FUND LP / XYZ are NOT real entity data.",
+    "Correct downstream behavior: reject at HITL (not extract). Currently the classifier mislabels it as capital_call @ 0.99 — classifier-tuning target.",
+    "For per-field F1 measurement we treat the placeholder strings as the literal contents (what's IN the source) but mark capital_call_amount/currency/unfunded as null (truly absent)."
+  ],
+  "ground_truth": {
+    "gp_name": "ABC, LLC",
+    "fund_name": "ABC FUND, LP",
+    "investor_name": "XYZ",
+    "notice_date": "2020-03-03",
+    "due_date": "2020-03-10",
+    "capital_call_amount": null,
+    "currency": null,
+    "unfunded_before": null,
+    "unfunded_after": null
+  }
+}

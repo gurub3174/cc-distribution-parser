@@ -1,0 +1,16 @@
+{
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "parsed_dict": {
+    "confidence": 0.99,
+    "label": "capital_call",
+    "reasoning": "This document is clearly titled 'Capital Call Notice' and explicitly states 'ABC FUND, LP pursuant to the terms of the Offering Memorandum, is hereby making a Capital Call' with a due date of March 10, 2020. The document requests the investor (XYZ) to send capital to the fund via wire instructions. This matches the definition of a capital_call notice perfectly - it is a request for an investor to send capital to the fund."
+  },
+  "raw_meta": {
+    "cached_tokens": 0,
+    "cost_usd": "0.001153",
+    "input_tokens": 473,
+    "output_tokens": 136
+  },
+  "response_model": "DocClassification",
+  "temperature": "0.0000"
+}

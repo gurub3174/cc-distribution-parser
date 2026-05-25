@@ -1,0 +1,16 @@
+{
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "parsed_dict": {
+    "confidence": 0.99,
+    "label": "capital_call",
+    "reasoning": "This document is explicitly titled 'FORM OF CAPITAL CALL NOTICE' and contains the key elements of a capital call: (1) it requests capital contribution from members/investors, (2) it specifies an amount owed based on ownership percentage ($500,000 based on 20% ownership of a $2,500,000 total call), (3) it provides payment instructions including wire transfer details, (4) it specifies a payment due date (12/30/2025), and (5) it references the Operating Agreement's capital contribution provisions. The document is a template/form showing the standard format for capital calls from Transource Energy, LLC to its members. This is unambiguously a capital call notice requesting investors to send capital to the fund."
+  },
+  "raw_meta": {
+    "cached_tokens": 0,
+    "cost_usd": "0.002085",
+    "input_tokens": 1085,
+    "output_tokens": 200
+  },
+  "response_model": "DocClassification",
+  "temperature": "0.0000"
+}

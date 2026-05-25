@@ -1,0 +1,16 @@
+{
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "parsed_dict": {
+    "confidence": 0.98,
+    "label": "capital_call",
+    "reasoning": "This document is clearly a capital call notice. The title explicitly states 'Notice of Capital Call Request to Member' and the body contains multiple references to a capital call request. The document demands payment of an unpaid contribution of $500,000 by a specific date (12-30-2025), which is the core function of a capital call. The document references resolutions authorizing the Managing Member to issue a 'Capital Call Request' and confirms that such a call was made. It also warns of dilution of membership interest for failure to pay, which is a standard consequence outlined in capital call notices. While the document also mentions a potential purchase of membership interest, the primary purpose and content focus on the capital call request and demand for payment of the unpaid contribution."
+  },
+  "raw_meta": {
+    "cached_tokens": 0,
+    "cost_usd": "0.001738",
+    "input_tokens": 768,
+    "output_tokens": 194
+  },
+  "response_model": "DocClassification",
+  "temperature": "0.0000"
+}

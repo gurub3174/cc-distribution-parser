@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # AWS / Bedrock
     aws_region: str = "us-east-1"
     bedrock_classifier_model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
-    bedrock_extractor_model_id: str = "us.anthropic.claude-sonnet-4-6-20250929-v1:0"
+    bedrock_extractor_model_id: str = "us.anthropic.claude-sonnet-4-6"
     bedrock_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
 
     # S3 (MinIO defaults for local dev)

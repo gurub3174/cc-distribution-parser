@@ -1,0 +1,20 @@
+{
+  "template_id": "free-form-llc-cc",
+  "doc_class": "capital_call",
+  "_notes": [
+    "Real notice (not a template). Managing Member signature lines are blank — gp_name and fund_name are not given.",
+    "Resolution date 03-17-2025 is the only date in the doc; using it as notice_date proxy since the actual notice date line is blank.",
+    "Source does not state unfunded ledger — labeled as null. Fabricated extractions are FP/FN in eval."
+  ],
+  "ground_truth": {
+    "gp_name": "NOT STATED",
+    "fund_name": "NOT STATED",
+    "investor_name": "Solomon Fund, LLC",
+    "notice_date": "2025-03-17",
+    "due_date": "2025-12-30",
+    "capital_call_amount": "500000",
+    "currency": "USD",
+    "unfunded_before": null,
+    "unfunded_after": null
+  }
+}

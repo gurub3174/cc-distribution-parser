@@ -9,14 +9,14 @@ models:
     id: us.anthropic.claude-haiku-4-5-20251001-v1:0
     temperature: 0.0
   extractor_cc:
-    id: us.anthropic.claude-sonnet-4-6-20250929-v1:0
+    id: us.anthropic.claude-sonnet-4-6
     temperature: 0.0
   extractor_distro:
-    id: us.anthropic.claude-sonnet-4-6-20250929-v1:0
+    id: us.anthropic.claude-sonnet-4-6
     temperature: 0.0
   reclassifier:
     # Escalation per Critic W4 — same family, used on reconciliation failure.
-    id: us.anthropic.claude-sonnet-4-6-20250929-v1:0
+    id: us.anthropic.claude-sonnet-4-6
     temperature: 0.0
   embedding:
     id: amazon.titan-embed-text-v2:0
