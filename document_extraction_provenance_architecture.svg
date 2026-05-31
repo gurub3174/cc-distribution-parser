@@ -1,0 +1,138 @@
+<svg width="100%" viewBox="0 0 680 540" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Document extraction provenance chain architecture</title>
+<desc>Five storage layers showing how every extracted value traces back to its source through a provenance chain, with a HITL training feedback loop.</desc>
+ 
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <style>
+    .bg        { fill: #f6f8fa; }
+    .box-gray  { fill: #eaeef2; stroke: #8c959f; }
+    .box-teal  { fill: #d4f1e4; stroke: #1a7f5a; }
+    .box-blue  { fill: #dbeafe; stroke: #2563eb; }
+    .box-amber { fill: #fef3c7; stroke: #d97706; }
+    .box-purple{ fill: #ede9fe; stroke: #7c3aed; }
+    .t-gray    { fill: #24292f; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 14px; font-weight: 600; }
+    .s-gray    { fill: #57606a; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .t-teal    { fill: #0d4a2f; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 14px; font-weight: 600; }
+    .s-teal    { fill: #1a7f5a; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .t-blue    { fill: #1e3a5f; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 14px; font-weight: 600; }
+    .s-blue    { fill: #2563eb; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .t-amber   { fill: #78350f; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 14px; font-weight: 600; }
+    .s-amber   { fill: #d97706; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .t-purple  { fill: #3b0764; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 14px; font-weight: 600; }
+    .s-purple  { fill: #7c3aed; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .prov-line { stroke: #d97706; stroke-width: 0.5; stroke-dasharray: 3 3; fill: none; }
+    .prov-dot  { fill: #d97706; opacity: 0.75; }
+    .prov-lbl  { fill: #92400e; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .prov-head { fill: #78350f; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 14px; font-weight: 600; }
+    .fb-line   { stroke: #7c3aed; stroke-width: 0.5; stroke-dasharray: 4 3; fill: none; }
+    .fb-dot    { fill: #7c3aed; opacity: 0.75; }
+    .fb-lbl    { fill: #4c1d95; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .arr-line  { stroke: #8c959f; stroke-width: 1.5; fill: none; }
+    .footer    { fill: #57606a; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .footer2   { fill: #8c959f; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 12px; }
+ 
+    @media (prefers-color-scheme: dark) {
+      .bg        { fill: #161b22; }
+      .box-gray  { fill: #21262d; stroke: #8b949e; }
+      .box-teal  { fill: #0d2e1f; stroke: #2ea872; }
+      .box-blue  { fill: #0d1f3c; stroke: #58a6ff; }
+      .box-amber { fill: #2d1a00; stroke: #d29922; }
+      .box-purple{ fill: #1e0a3c; stroke: #a371f7; }
+      .t-gray    { fill: #e6edf3; }
+      .s-gray    { fill: #8b949e; }
+      .t-teal    { fill: #aff5d0; }
+      .s-teal    { fill: #2ea872; }
+      .t-blue    { fill: #cae8ff; }
+      .s-blue    { fill: #58a6ff; }
+      .t-amber   { fill: #ffe0a3; }
+      .s-amber   { fill: #d29922; }
+      .t-purple  { fill: #e2ccff; }
+      .s-purple  { fill: #a371f7; }
+      .prov-line { stroke: #d29922; }
+      .prov-dot  { fill: #d29922; }
+      .prov-lbl  { fill: #d29922; }
+      .prov-head { fill: #ffe0a3; }
+      .fb-line   { stroke: #a371f7; }
+      .fb-dot    { fill: #a371f7; }
+      .fb-lbl    { fill: #e2ccff; }
+      .arr-line  { stroke: #8b949e; }
+      .footer    { fill: #8b949e; }
+      .footer2   { fill: #6e7681; }
+    }
+  </style>
+</defs>
+ 
+<!-- Background -->
+<rect width="680" height="540" class="bg" rx="12"/>
+ 
+<!-- Layer 1: Document Registry -->
+<rect x="110" y="40" width="258" height="56" rx="8" stroke-width="0.5" class="box-gray"/>
+<text x="239" y="60" text-anchor="middle" dominant-baseline="central" class="t-gray">Document registry</text>
+<text x="239" y="78" text-anchor="middle" dominant-baseline="central" class="s-gray">Hash, raw parse, metadata</text>
+ 
+<!-- Arrow 1→2 -->
+<line x1="239" y1="96" x2="239" y2="128" class="arr-line" marker-end="url(#arrow)"/>
+ 
+<!-- Layer 2: Vector Chunks -->
+<rect x="110" y="130" width="258" height="56" rx="8" stroke-width="0.5" class="box-teal"/>
+<text x="239" y="150" text-anchor="middle" dominant-baseline="central" class="t-teal">Vector chunks</text>
+<text x="239" y="168" text-anchor="middle" dominant-baseline="central" class="s-teal">Hierarchy, embeddings, bbox</text>
+ 
+<!-- Arrow 2→3 -->
+<line x1="239" y1="186" x2="239" y2="218" class="arr-line" marker-end="url(#arrow)"/>
+ 
+<!-- Layer 3: Extraction Events -->
+<rect x="110" y="220" width="258" height="56" rx="8" stroke-width="0.5" class="box-blue"/>
+<text x="239" y="240" text-anchor="middle" dominant-baseline="central" class="t-blue">Extraction events</text>
+<text x="239" y="258" text-anchor="middle" dominant-baseline="central" class="s-blue">Prompt, model, telemetry</text>
+ 
+<!-- Arrow 3→4 -->
+<line x1="239" y1="276" x2="239" y2="308" class="arr-line" marker-end="url(#arrow)"/>
+ 
+<!-- Layer 4: Structured Output -->
+<rect x="110" y="310" width="258" height="56" rx="8" stroke-width="0.5" class="box-amber"/>
+<text x="239" y="330" text-anchor="middle" dominant-baseline="central" class="t-amber">Structured output (JSONB)</text>
+<text x="239" y="348" text-anchor="middle" dominant-baseline="central" class="s-amber">Fields + provenance markers</text>
+ 
+<!-- Arrow 4→5 -->
+<line x1="239" y1="366" x2="239" y2="398" class="arr-line" marker-end="url(#arrow)"/>
+ 
+<!-- Layer 5: HITL Corrections -->
+<rect x="110" y="400" width="258" height="56" rx="8" stroke-width="0.5" class="box-purple"/>
+<text x="239" y="420" text-anchor="middle" dominant-baseline="central" class="t-purple">HITL corrections</text>
+<text x="239" y="438" text-anchor="middle" dominant-baseline="central" class="s-purple">Prediction, correction, reason</text>
+ 
+<!-- Provenance bracket: ticks -->
+<line x1="368" y1="68"  x2="408" y2="68"  class="prov-line"/>
+<line x1="368" y1="158" x2="408" y2="158" class="prov-line"/>
+<line x1="368" y1="248" x2="408" y2="248" class="prov-line"/>
+<line x1="368" y1="338" x2="408" y2="338" class="prov-line"/>
+<!-- Vertical spine -->
+<line x1="408" y1="68"  x2="408" y2="338" class="prov-line"/>
+<!-- Dots -->
+<circle cx="408" cy="68"  r="2.5" class="prov-dot"/>
+<circle cx="408" cy="158" r="2.5" class="prov-dot"/>
+<circle cx="408" cy="248" r="2.5" class="prov-dot"/>
+<circle cx="408" cy="338" r="2.5" class="prov-dot"/>
+ 
+<!-- Provenance labels -->
+<text x="422" y="68"  dominant-baseline="central" class="prov-lbl">bbox coordinates</text>
+<text x="422" y="158" dominant-baseline="central" class="prov-lbl">chunk_id</text>
+<text x="422" y="248" dominant-baseline="central" class="prov-lbl">event_id</text>
+<text x="422" y="330" dominant-baseline="central" class="prov-head">Provenance chain</text>
+<text x="422" y="350" class="prov-lbl">Every value traces to source</text>
+ 
+<!-- HITL feedback loop -->
+<path d="M110 428 L68 428 L68 248 L108 248" class="fb-line" marker-end="url(#arrow)"/>
+<circle cx="68" cy="428" r="2.5" class="fb-dot"/>
+<circle cx="68" cy="248" r="2.5" class="fb-dot"/>
+<text x="57" y="338" text-anchor="middle" dominant-baseline="central" class="fb-lbl" transform="rotate(-90 57 338)">Training + labels</text>
+ 
+<!-- Footer -->
+<text x="340" y="496" text-anchor="middle" class="footer">Immutable event log — append corrections, never overwrite</text>
+<text x="340" y="514" text-anchor="middle" class="footer2">Postgres + pgvector / JSONB</text>
+ 
+</svg>

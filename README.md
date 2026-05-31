@@ -1,6 +1,6 @@
 # cc-distribution-parser
 
-Extracts capital-call and distribution notices (PDF / scanned PDF / DOCX) into validated structured fields with HITL review. Internal Canoe Intelligence replacement; corpus-owning by design.
+Extracts financial notices (PDF / scanned PDF / DOCX) into validated structured fields with HITL review. 
 
 ## Setup
 
@@ -35,6 +35,4 @@ uv run pyright
 - `spec/` — design package from AI Design Team (PRD, TDD, sprint plan, scope, etc.)
 - `wiki/` — project-local lessons-learned
 
-## Build Team
 
-This project is built with the AI Build Team. See `CLAUDE.md` for invocation instructions.
