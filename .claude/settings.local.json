@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:ilpa.org)",
+      "WebFetch(domain:efts.sec.gov)",
+      "WebFetch(domain:www.trs.texas.gov)",
+      "Bash(pip index *)",
+      "WebFetch(domain:pypi.org)"
+    ]
+  }
+}
