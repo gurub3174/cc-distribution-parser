@@ -70,10 +70,17 @@ class DoclingParser:
 
         Isolated for test seam: unit tests monkeypatch this; integration
         tests exercise the real path.
+
+        OCR: when `force_ocr=True`, wire PdfPipelineOptions(do_ocr=True,
+        force_full_page_ocr=True) into DocumentConverter format_options.
+        Image-only PDFs (e.g. ILPA scans) parse to 0 bytes without this.
+        Per memory/project_docling_learnings.md: only enable on image-only
+        PDFs — OCR on native PDFs both slows parse and degrades quality.
         """
         # Local import keeps unit tests fast and avoids hard dep at import time.
-        from docling.datamodel.base_models import DocumentStream
-        from docling.document_converter import DocumentConverter
+        from docling.datamodel.base_models import DocumentStream, InputFormat
+        from docling.datamodel.pipeline_options import PdfPipelineOptions
+        from docling.document_converter import DocumentConverter, PdfFormatOption
 
         if mime_type not in (
             "application/pdf",
@@ -87,7 +94,15 @@ class DoclingParser:
             name=f"doc-{uuid.uuid4().hex[:8]}",
             stream=io.BytesIO(file_bytes),
         )
-        converter = DocumentConverter()
+        if self._force_ocr and mime_type == "application/pdf":
+            pipeline_options = PdfPipelineOptions(do_ocr=True, force_full_page_ocr=True)
+            converter = DocumentConverter(
+                format_options={
+                    InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+                }
+            )
+        else:
+            converter = DocumentConverter()
         result = converter.convert(stream)
         return result.document.export_to_dict()
 

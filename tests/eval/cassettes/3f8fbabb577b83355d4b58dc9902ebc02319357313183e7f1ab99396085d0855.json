@@ -1,0 +1,16 @@
+{
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "parsed_dict": {
+    "confidence": 0.65,
+    "label": "other_or_reject",
+    "reasoning": "This document is a sample template from the Institutional Limited Partners Association (ILPA) that demonstrates both capital call and distribution notices in a single document. The document contains multiple components: (1) a capital call for $1,750,000 due 1/10/2011 for investment in ABC Company and management fees, with specific wire instructions; (2) a distribution of $40,000,000 in cash proceeds from the sale of FGH Company; and (3) a distribution of 500,000 common shares from IJK Company's IPO. Since this is a sample/template document marked as 'SAMPLES' at the top and explicitly labeled as demonstrating both 'Capital Call & Distribution Notices', it contains elements of both capital_call and distribution. However, the primary substantive content focuses on both actions occurring simultaneously in what appears to be a net capital call notice (calling capital while also distributing proceeds, with a net contribution of $1,750,000). The document is primarily instructional/template material rather than an actual notice to a specific LP, but if treated as a notice, it would be classified as containing both a capital call and distributions. Given the ambiguity and that this is explicitly a sample/template document, this could arguably be 'other_or_reject' as it's not a genuine operational notice but rather educational material."
+  },
+  "raw_meta": {
+    "cached_tokens": 0,
+    "cost_usd": "0.003195",
+    "input_tokens": 1555,
+    "output_tokens": 328
+  },
+  "response_model": "DocClassification",
+  "temperature": "0.0000"
+}

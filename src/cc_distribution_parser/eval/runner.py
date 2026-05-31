@@ -32,10 +32,15 @@ def _default_run_pipeline(doc: GoldenDoc) -> dict[str, Any]:
     Stubs S3 uploads so the harness doesn't require MinIO / live S3.
     """
     from cc_distribution_parser.parsing.docling_parser import DoclingParser
+    from cc_distribution_parser.parsing.vlm_parser import VLMParser
     from cc_distribution_parser.services import ingest as ingest_module
     from cc_distribution_parser.services import parse as parse_module
     from cc_distribution_parser.workflow import runner as graph_runner
     from cc_distribution_parser.workflow.types import DocState
+
+    # Pinned VLM model for fallback when docling returns 0 chunks (image-only PDFs).
+    # Lives in eval runner — main.py / config.py is the production wiring site.
+    VLM_FALLBACK_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
 
     # Stub S3 if it hasn't been stubbed already in this process.
     if not getattr(ingest_module.upload_to_s3, "_eval_stub", False):
@@ -68,7 +73,12 @@ def _default_run_pipeline(doc: GoldenDoc) -> dict[str, Any]:
         "extraction_payload": {"_file_bytes": body},
     }
     state = ingest_module.run(state)
-    state = parse_module.run(state, parser=DoclingParser(), file_bytes=body)
+    state = parse_module.run(
+        state,
+        parser=DoclingParser(),
+        file_bytes=body,
+        fallback_parser=VLMParser(model_id=VLM_FALLBACK_MODEL_ID),
+    )
     state.get("extraction_payload", {}).pop("_file_bytes", None)
     final = graph_runner.run_pipeline(state)
     return final.get("extraction_payload") or {}

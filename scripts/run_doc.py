@@ -44,8 +44,11 @@ parse_module.upload_parsed_json = _noop_upload_parsed_json  # type: ignore[assig
 
 from cc_distribution_parser.observability.logging import configure_logging  # noqa: E402
 from cc_distribution_parser.parsing.docling_parser import DoclingParser  # noqa: E402
+from cc_distribution_parser.parsing.vlm_parser import VLMParser  # noqa: E402
 from cc_distribution_parser.workflow import runner as graph_runner  # noqa: E402
 from cc_distribution_parser.workflow.types import DocState  # noqa: E402
+
+VLM_FALLBACK_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
 
 
 def _parse_args() -> argparse.Namespace:
@@ -63,6 +66,18 @@ def _parse_args() -> argparse.Namespace:
         "--ocr",
         action="store_true",
         help="force-OCR the PDF (slow; needed for image-only PDFs like the ILPA samples)",
+    )
+    p.add_argument(
+        "--vlm-fallback",
+        action="store_true",
+        default=True,
+        help="enable Bedrock Sonnet VLM fallback when Docling extracts 0 chunks (default: on)",
+    )
+    p.add_argument(
+        "--no-vlm-fallback",
+        action="store_false",
+        dest="vlm_fallback",
+        help="disable the VLM fallback (e.g. to reproduce pre-Sprint-8 behavior)",
     )
     return p.parse_args()
 
@@ -98,7 +113,13 @@ def main() -> int:
         file=sys.stderr,
     )
     state = ingest_module.run(state)
-    state = parse_module.run(state, parser=DoclingParser(force_ocr=args.ocr), file_bytes=body)
+    fallback = VLMParser(model_id=VLM_FALLBACK_MODEL_ID) if args.vlm_fallback else None
+    state = parse_module.run(
+        state,
+        parser=DoclingParser(force_ocr=args.ocr),
+        file_bytes=body,
+        fallback_parser=fallback,
+    )
     state.get("extraction_payload", {}).pop("_file_bytes", None)
 
     if args.dump_text:

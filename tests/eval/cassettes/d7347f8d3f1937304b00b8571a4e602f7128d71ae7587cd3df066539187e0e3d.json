@@ -1,0 +1,16 @@
+{
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "parsed_dict": {
+    "confidence": 0.92,
+    "label": "other_or_reject",
+    "reasoning": "This document is the ILPA Capital Call & Distribution Template (Version 1.1), which is a standardized template/sample form used for creating capital call and distribution notices. The document itself is not an actual notice to an investor, but rather a blank template showing how such notices should be formatted. Key indicators: (1) It's explicitly labeled as 'Template' and 'SAMPLES' at the top, (2) It contains placeholder values and example data (e.g., 'Best Practices Fund II, L.P.', 'LP #5'), (3) It includes instructional text like 'Formulas, Do Not Overwrite' and 'Choose from Dropdown', (4) It's published by ILPA as a standardized format guide. While the template shows both capital call and distribution sections, this is a template/instructional document rather than an actual notice requesting or announcing a specific transaction. Therefore, it should be classified as 'other_or_reject' since it's neither an actual capital call nor an actual distribution notice, but rather a template/sample document."
+  },
+  "raw_meta": {
+    "cached_tokens": 0,
+    "cost_usd": "0.00279",
+    "input_tokens": 1425,
+    "output_tokens": 273
+  },
+  "response_model": "DocClassification",
+  "temperature": "0.0000"
+}
